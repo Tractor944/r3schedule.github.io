@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Garage Timing Board</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+/* ================= BASE ================= */
+
+html,body{
+margin:0;
+padding:0;
+width:100%;
+height:100%;
+background:#222629;
+font-family:Arial,Helvetica,sans-serif;
+color:white;
+overflow:hidden;
+}
+
+body{
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+/*NO SELECT*/
+/* Disable text selection everywhere */
+body {
+    user-select: none;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none;    /* Firefox */
+    -ms-user-select: none;     /* Old Edge */
+}
+
+/* ================= MAIN ================= */
+
+.container{text-align:center;}
+
+.logo{
+max-width:60vw;
+max-height:20vh;
+margin-bottom:3vh;
+}
+
+.date{font-size:3vw;opacity:.85;}
+
+.session-name{
+font-size:7vw;
+font-weight:bold;
+margin:2vh;
+}
+
+.countdown{
+font-size:14vw;
+font-weight:bold;
+}
+
+.next-session{
+font-size:2.5vw;
+opacity:.8;
+margin-top:2vh;
+}
+
+/* ================= CLOCK ================= */
+
+.clock{
+position:absolute;
+top:2vh;
+right:2vw;
+background:white;
+color:black;
+padding:10px 18px;
+border-radius:18px;
+text-align:right;
+font-family:monospace;
+}
+
+.current-time{
+font-size:3vw;
+font-weight:bold;
+}
+
+.current-date{
+font-size:1.8vw;
+}
+
+/* ================= SCHEDULE ================= */
+
+.scheduleOverlay{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#000e;
+display:none;
+overflow:auto;
+padding:3vh;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+font-size:1.6vw;
+}
+
+th,td{
+padding:10px;
+border-bottom:1px solid #555;
+text-align:left;
+}
+
+th{
+background:#111;
+text-transform:uppercase;
+}
+
+.next-start{
+color:#EE4B2B;
+font-weight:bold;
+margin-top:.5vh;
+}
+
+/* DAY SEPARATOR */
+
+.dayHeader{
+font-size:2.2vw;
+font-weight:bold;
+padding-top:25px;
+padding-bottom:10px;
+color:#EE4B2B;
+}
+
+/* STATES */
+
+.past{
+color:#777;
+text-decoration:line-through;
+}
+
+.current{
+color:#00ff88;
+font-weight:bold;
+}
+
+/* HOTKEY LEGEND */
+.hotkeyLegend{
+position:absolute;
+bottom:1.5vh;
+right:1.5vw;
+
+font-size:0.9vw;
+line-height:1.4;
+
+color:#aaa;
+opacity:0.35;
+
+background:#0006;
+padding:8px 12px;
+border-radius:6px;
+
+font-family:monospace;
+
+pointer-events:auto;
+transition:opacity .25s ease;
+}
+
+.hotkeyLegend:hover{
+opacity:.85;
+}
+
+/* ================= SCHEDULE BUTTON ================= */
+
+.scheduleBtn{
+
+position:absolute;
+bottom:2vh;
+left:2vw;
+
+font-size:1.2vw;
+padding:10px 18px;
+
+background:#EE4B2B;
+border:none;
+border-radius:8px;
+
+color:white;
+font-weight:bold;
+
+cursor:pointer;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.4);
+
+}
+
+/* MOBILE SIZE */
+@media (max-width:900px){
+
+.scheduleBtn{
+font-size:4vw;
+padding:14px 22px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- CLOCK -->
+<div class="clock">
+<div id="currentTime" class="current-time"></div>
+<div id="currentDate" class="current-date"></div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+<img src="logo.png" class="logo">
+<div id="date" class="date"></div>
+<div id="title" class="session-name"></div>
+<div id="timer" class="countdown"></div>
+<div class="next-session">
+<div id="nextSession"></div>
+<div id="nextStart" class="next-start"></div>
+</div>
+</div>
+
+<!-- SCHEDULE -->
+<div id="scheduleOverlay" class="scheduleOverlay">
+<h1>R01 The Thermal Club</h1>
+<table id="scheduleTable"></table>
+</div>
+
+<button class="scheduleBtn" onclick="toggleSchedule()">
+View Schedule
+</button>
+
+<script>
+
+/************* SETTINGS *************/
+let dateFormat="US";
+let timeOffset=0;
+let scheduleVisible=false;
+let timeFormat24 = false;
+
+/************* SCHEDULE *************/
+const schedule=[
+  { name: "Optional Track Walk", start: "2026-03-11T07:00:00", end: "2026-03-11T08:00:00" },
+  { name: "Drivers briefing - MC", start: "2026-03-11T08:15:00", end: "2026-03-11T08:45:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-11T09:00:00", end: "2026-03-11T09:45:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-11T09:50:00", end: "2026-03-11T10:35:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-11T10:40:00", end: "2026-03-11T11:25:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-11T11:30:00", end: "2026-03-11T12:15:00" },
+  { name: "Track Closed", start: "2026-03-11T12:15:00", end: "2026-03-11T13:15:00" },
+  { name: "Coaches Only Mtg.", start: "2026-03-11T12:20:00", end: "2026-03-11T12:35:00" },
+  { name: "Team Manager Mtg.", start: "2026-03-11T12:45:00", end: "2026-03-11T13:00:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-11T13:15:00", end: "2026-03-11T13:55:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-11T14:00:00", end: "2026-03-11T14:40:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-11T14:45:00", end: "2026-03-11T15:25:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-11T15:30:00", end: "2026-03-11T16:10:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-11T16:15:00", end: "2026-03-11T16:55:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-11T17:00:00", end: "2026-03-11T17:40:00" },
+  { name: "Media Activities", start: "2026-03-11T17:45:00", end: "2026-03-11T19:00:00" },
+  { name: "Optional Track Walk", start: "2026-03-12T07:30:00", end: "2026-03-12T08:30:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-12T08:30:00", end: "2026-03-12T09:20:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-12T09:25:00", end: "2026-03-12T10:15:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-12T10:20:00", end: "2026-03-12T11:10:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-12T11:15:00", end: "2026-03-12T12:05:00" },
+  { name: "Track Closed", start: "2026-03-12T12:05:00", end: "2026-03-12T13:05:00" },
+  { name: "Driver Headshots in Firesuits", start: "2026-03-12T12:05:00", end: "2026-03-12T14:30:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-12T13:05:00", end: "2026-03-12T13:45:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-12T13:50:00", end: "2026-03-12T14:30:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-12T14:35:00", end: "2026-03-12T15:15:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-12T15:20:00", end: "2026-03-12T16:00:00" },
+  { name: "Official Test P/P-AM", start: "2026-03-12T16:05:00", end: "2026-03-12T16:45:00" },
+  { name: "Official Test S/S-AM", start: "2026-03-12T16:50:00", end: "2026-03-12T17:30:00" },
+  { name: "Media Activities", start: "2026-03-12T17:35:00", end: "2026-03-12T19:00:00" },
+
+];
+
+/************* ELEMENTS *************/
+const titleEl=title;
+const timerEl=timer;
+const dateEl=date;
+const nextStartEl = nextStart;
+const nextEl=nextSession;
+const clockTime=currentTime;
+const clockDate=currentDate;
+const overlay=scheduleOverlay;
+const table=scheduleTable;
+
+
+/************* NETWORK TIME *************/
+async function syncNetworkTime(){
+try{
+const r=await fetch("https://worldtimeapi.org/api/ip");
+const j=await r.json();
+timeOffset=new Date(j.utc_datetime)-Date.now();
+}catch{}
+}
+syncNetworkTime();
+setInterval(syncNetworkTime,600000);
+
+function now(){
+return new Date(Date.now()+timeOffset);
+}
+
+/************* FORMAT *************/
+function formatClock(d){
+
+let h = d.getHours();
+let m = String(d.getMinutes()).padStart(2,'0');
+let s = String(d.getSeconds()).padStart(2,'0');
+
+if(timeFormat24){
+    return `${String(h).padStart(2,'0')}:${m}:${s}`;
+}
+
+/* ===== 12H FORMAT ===== */
+
+let suffix = h >= 12 ? "PM" : "AM";
+
+h = h % 12;
+if(h === 0) h = 12;
+
+return `${h}:${m}:${s} ${suffix}`;
+}
+
+function formatDate(d){
+const dd=String(d.getDate()).padStart(2,'0');
+const mm=String(d.getMonth()+1).padStart(2,'0');
+const yyyy=d.getFullYear();
+
+return dateFormat==="US"
+?`${mm}-${dd}-${yyyy}`
+:`${dd}/${mm}/${yyyy}`;
+}
+
+function formatTime(ms){
+const t=Math.max(0,Math.floor(ms/1000));
+return new Date(t*1000).toISOString().substr(11,8);
+}
+
+function formatDuration(st,en){
+const diff=(en-st)/1000;
+const h=String(Math.floor(diff/3600)).padStart(2,'0');
+const m=String(Math.floor((diff%3600)/60)).padStart(2,'0');
+return `${h}:${m}`;
+}
+
+/************* DAY FILTER *************/
+function isSameOrFutureDay(eventDate,today){
+
+const e=new Date(eventDate.getFullYear(),
+eventDate.getMonth(),
+eventDate.getDate());
+
+const t=new Date(today.getFullYear(),
+today.getMonth(),
+today.getDate());
+
+return e>=t;
+}
+
+/************* BUILD SCHEDULE *************/
+function buildSchedule(){
+
+const n=now();
+
+table.innerHTML="";
+
+let currentDay="";
+
+table.innerHTML+=
+"<tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th>Session</th></tr>";
+
+schedule.forEach(s=>{
+
+const st=new Date(s.start);
+const en=new Date(s.end);
+
+if(!isSameOrFutureDay(st,n)) return;
+
+/* DAY SEPARATOR */
+const dayKey=st.toDateString();
+
+if(dayKey!==currentDay){
+currentDay=dayKey;
+
+table.innerHTML+=`
+<tr>
+<td colspan="5" class="dayHeader">
+${dayKey}
+</td>
+</tr>`;
+}
+
+let cls="";
+if(n>en) cls="past";
+else if(n>=st&&n<=en) cls="current";
+
+table.innerHTML+=`
+<tr class="${cls}">
+<td>${formatDate(st)}</td>
+<td>${formatClock(st)}</td>
+<td>${formatClock(en)}</td>
+<td>${formatDuration(st,en)}</td>
+<td>${s.name}</td>
+</tr>`;
+});
+}
+
+/************* FULLSCREEN *************/
+function enterFullscreen(){
+document.documentElement.requestFullscreen().catch(()=>{});
+}
+/* DISABLE FULLSCREEN
+window.onclick=enterFullscreen;
+*/
+
+/************* MAIN LOOP *************/
+function update(){
+
+const n=now();
+
+clockTime.textContent=formatClock(n);
+clockDate.textContent=formatDate(n);
+dateEl.textContent=formatDate(n);
+
+let nextName="";
+let nextStart="";
+
+for(let i=0;i<schedule.length;i++){
+
+const s=schedule[i];
+const start=new Date(s.start);
+const end=new Date(s.end);
+
+if(n<start){
+titleEl.textContent="Start of "+s.name;
+timerEl.textContent=formatTime(start-n);
+nextName=s.name;
+nextStart=formatClock(start);
+break;
+}
+
+if(n>=start&&n<end){
+titleEl.textContent="Now: "+s.name;
+timerEl.textContent=formatTime(end-n);
+if(schedule[i+1]){
+nextName=schedule[i+1].name;
+nextStart=formatClock(
+    new Date(schedule[i+1].start)
+);
+}
+break;
+}
+}
+
+nextEl.textContent=
+nextName?("Next: "+nextName):"Event Complete";
+nextStartEl.textContent=nextStart;
+
+if(scheduleVisible) buildSchedule();
+}
+
+update();
+setInterval(update,250);
+
+/************* TOGGLE SCHEDULE *************/
+function toggleSchedule(){
+
+scheduleVisible=!scheduleVisible;
+
+overlay.style.display=
+scheduleVisible?"block":"none";
+
+buildSchedule();
+
+}
+
+/************* HOTKEYS *************/
+document.addEventListener("keydown",e=>{
+
+if(e.key.toLowerCase()==="d")
+dateFormat=dateFormat==="IT"?"US":"IT";
+
+if(e.key.toLowerCase()==="s"){
+scheduleVisible=!scheduleVisible;
+overlay.style.display=
+scheduleVisible?"block":"none";
+buildSchedule();
+}
+
+if(e.key.toLowerCase()==="t"){
+timeFormat24 = !timeFormat24;
+
+if(scheduleVisible)
+    buildSchedule();
+}
+
+if(e.key.toLowerCase()==="f")
+enterFullscreen();
+
+});
+
+</script>
+<div class="hotkeyLegend">
+<b>HOTKEYS</b><br>
+S - Schedule<br>
+D - Date format<br>
+T - 12H / 24H<br>
+F - Fullscreen
+</div>
+</body>
+</html>
