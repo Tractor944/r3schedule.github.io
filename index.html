@@ -108,7 +108,7 @@ padding:3vh;
 table{
 width:100%;
 border-collapse:collapse;
-font-size:clamp(14px, 1.6vw, 22px);
+font-size:clamp(12px, 1.2vw, 20px);
 }
 
 th,td{
@@ -122,6 +122,13 @@ background:#111;
 text-transform:uppercase;
 }
 
+td:nth-child(2),
+td:nth-child(3),
+td:nth-child(4){
+white-space:nowrap;
+}
+    
+    
 .next-start{
 color:#EE4B2B;
 font-weight:bold;
@@ -201,11 +208,35 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 }
 
 /* MOBILE SIZE */
-@media (max-width:900px){
+@media (max-width: 768px){
 
-.scheduleBtn{
-font-size:4vw;
-padding:14px 22px;
+/* font leggibile */
+table{
+font-size:14px;
+}
+
+/* meno spazio tra celle */
+th, td{
+padding:6px;
+}
+
+/* NASCONDE colonna Date */
+th:nth-child(1),
+td:nth-child(1){
+display:none;
+}
+
+/* NASCONDE colonna End */
+th:nth-child(3),
+td:nth-child(3){
+display:none;
+}
+
+/* evidenzia nome sessione */
+td:nth-child(5){
+font-weight:bold;
+}
+
 }
 
 }
