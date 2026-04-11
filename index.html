@@ -222,6 +222,54 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 
 }
 
+/* ================= GO LIVE TIMING ================= */
+
+.livetimingBtn{
+
+position:absolute;
+bottom:8vh;
+left:2vw;
+
+font-size:1.2vw;
+padding:10px 18px;
+
+background:#EE4B2B;
+border:none;
+border-radius:8px;
+
+color:white;
+font-weight:bold;
+
+cursor:pointer;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.4);
+
+}
+
+/* ================= GO LIVE STREAMING ================= */
+
+.livestreamBtn{
+
+position:absolute;
+bottom:14vh;
+left:2vw;
+
+font-size:1.2vw;
+padding:10px 18px;
+
+background:#EE4B2B;
+border:none;
+border-radius:8px;
+
+color:white;
+font-weight:bold;
+
+cursor:pointer;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.4);
+
+}
+
 /* MOBILE SIZE */
 @media (max-width: 768px){
 
@@ -271,9 +319,83 @@ display:block;
 width:100%;
 }
 
-}
+/* test mobile */
+/* ================= SCHEDULE BUTTON ================= */
+
+.scheduleBtn{
+
+position:absolute;
+bottom:2vh;
+left:2vw;
+
+font-size:3vw;
+padding:5px 5px;
+
+background:#EE4B2B;
+border:none;
+border-radius:8px;
+
+color:white;
+font-weight:bold;
+
+cursor:pointer;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.4);
 
 }
+
+/* ================= GO LIVE TIMING ================= */
+
+.livetimingBtn{
+
+position:absolute;
+bottom:2vh;
+left:25vw;
+
+font-size:3vw;
+padding:5px 5px;
+
+background:#EE4B2B;
+border:none;
+border-radius:8px;
+
+color:white;
+font-weight:bold;
+
+cursor:pointer;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.4);
+
+}
+
+/* ================= GO LIVE STREAMING ================= */
+
+.livestreamBtn{
+
+position:absolute;
+bottom:2vh;
+left:49vw;
+
+font-size:3vw;
+padding:5px 5px;
+
+background:#EE4B2B;
+border:none;
+border-radius:8px;
+
+color:white;
+font-weight:bold;
+
+cursor:pointer;
+
+box-shadow:0 4px 10px rgba(0,0,0,0.4);
+
+}
+
+
+}
+
+
 
 </style>
 </head>
@@ -306,6 +428,14 @@ width:100%;
 
 <button class="scheduleBtn" onclick="toggleSchedule()">
 View Schedule
+</button>
+
+<button class="livetimingBtn" onclick="window.open('https://livetiming.alkamelsystems.com/fcna', '_blank');">
+  Go Live Timing
+</button>
+
+<button class="livestreamBtn" onclick="window.open('https://www.youtube.com/@Ferrari/streams', '_blank');">
+  Go Live Streaming
 </button>
 
 <script>
