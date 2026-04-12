@@ -270,6 +270,14 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 
 }
 
+.button-container {
+  display: flex;
+  flex-wrap: wrap; /* Allows buttons to wrap on smaller screens */
+  gap: 15px;      /* Consistent space between buttons horizontally and vertically */
+  justify-content: center; /* Centers buttons; use 'flex-start' for left-aligned */
+}
+
+
 /* MOBILE SIZE */
 @media (max-width: 768px){
 
@@ -323,11 +331,11 @@ width:100%;
 /* ================= SCHEDULE BUTTON ================= */
 
 .scheduleBtn{
-
+/*
 position:absolute;
 bottom:2vh;
 left:2vw;
-
+*/
 font-size:3vw;
 padding:5px 5px;
 
@@ -347,11 +355,11 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 /* ================= GO LIVE TIMING ================= */
 
 .livetimingBtn{
-
+/*
 position:absolute;
 bottom:2vh;
 left:25vw;
-
+*/
 font-size:3vw;
 padding:5px 5px;
 
@@ -371,10 +379,11 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 /* ================= GO LIVE STREAMING ================= */
 
 .livestreamBtn{
-
+/*
 position:absolute;
 bottom:2vh;
-left:49vw;
+left:49vw; 
+*/
 
 font-size:3vw;
 padding:5px 5px;
@@ -392,6 +401,12 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 
 }
 
+.button-container {
+  display: flex;
+  flex-wrap: wrap; /* Allows buttons to wrap on smaller screens */
+  gap: 15px;      /* Consistent space between buttons horizontally and vertically */
+  justify-content: center; /* Centers buttons; use 'flex-start' for left-aligned */
+}
 
 }
 
@@ -426,6 +441,9 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 <table id="scheduleTable"></table>
 </div>
 
+<!--/************* TEST Container *************/ -->
+<div class="button-container">
+
 <button class="scheduleBtn" onclick="toggleSchedule()">
 View Schedule
 </button>
@@ -437,6 +455,7 @@ View Schedule
 <button class="livestreamBtn" onclick="window.open('https://www.youtube.com/@Ferrari/streams', '_blank');">
   Go Live Streaming
 </button>
+</div>
 
 <script>
 
