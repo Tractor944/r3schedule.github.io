@@ -4,7 +4,7 @@
 2026-05-13,09:50,10:35,Official Test P/P-AM
 2026-05-13,10:40,11:25,Official Test S/S-AM
 2026-05-13,11:30,12:15,Official Test P/P-AM
-2026-05-13,12:15,13:15,Lunch
+2026-05-13,12:15,13:15,Track Closed
 2026-05-13,12:20,12:35,Coaches Only Mtg.
 2026-05-13,12:45,13:00,Team Manager Mtg.
 2026-05-13,13:15,13:55,Official Test S/S-AM
@@ -19,83 +19,67 @@
 2026-05-14,09:25,10:15,Official Test S/S-AM
 2026-05-14,10:20,11:10,Official Test P/P-AM
 2026-05-14,11:15,12:05,Official Test S/S-AM
-2026-05-14,12:05,13:05,Lunch
+2026-05-14,12:05,13:05,Track Closed
 2026-05-14,13:05,13:45,Official Test P/P-AM
 2026-05-14,13:50,14:30,Official Test S/S-AM
 2026-05-14,14:35,15:15,Official Test P/P-AM
 2026-05-14,15:20,16:00,Official Test S/S-AM
-2026-05-14,16:00,16:20,Drivers briefing – MC
 2026-05-14,16:05,16:45,Official Test P/P-AM
 2026-05-14,16:50,17:30,Official Test S/S-AM
-2026-05-14,17:35,19:05,F1 Clienti & SPC
-2026-05-14,19:10,20:10,Optional Track Walk
-2026-05-15,07:00,07:45,Optional Track Walk
-2026-05-15,08:00,08:20,F1 Clienti/SPC/XX Programme
-2026-05-15,08:30,09:00,F1 Clienti/SPC/XX Programme
-2026-05-15,08:30,09:10,Official Practice 1 - S/S-AM
-2026-05-15,09:15,09:55,XX Programme
-2026-05-15,10:00,10:40,Official Practice 1 – P/P-AM
-2026-05-15,10:45,11:20,F1 Clienti & SPC
-2026-05-15,11:25,12:05,Official Practice 2 - S/S-AM
-2026-05-15,12:05,13:05,Lunch
-2026-05-15,12:40,12:50,Group Photo - Starting/Finish Line
-2026-05-15,13:05,13:45,XX Programme
-2026-05-15,13:50,14:30,Official Practice 2 – P/P-AM
-2026-05-15,14:35,15:10,F1 Clienti & SPC
-2026-05-15,14:45,15:15,Drivers briefing – CC GT
-2026-05-15,15:15,15:45,Official Practice 3 - S/S-AM
-2026-05-15,15:50,16:35,Club Competizioni GT
-2026-05-15,16:30,16:50,Drivers briefing – CC
-2026-05-15,16:40,17:10,Official Practice 3 – P/P-AM
-2026-05-15,17:25,18:00,Club Challenge
-2026-05-15,18:05,19:15,Club Competizioni GT
-2026-05-15,19:20,20:00,Club Challenge
-2026-05-16,07:00,07:45,Optional Track Walk
-2026-05-16,08:00,08:30,Club Challenge
-2026-05-16,08:35,08:50,Qualifying 1 – Pirelli-AM
-2026-05-16,08:55,09:10,Qualifying 1 – Pirelli
-2026-05-16,09:15,09:30,Qualifying 1 – Shell-AM
-2026-05-16,09:35,09:50,Qualifying 1 – Shell
-2026-05-16,09:55,10:35,XX Programme
-2026-05-16,10:40,12:05,Club Competizioni GT
-2026-05-16,12:10,12:45,F1 Clienti & SPC
-2026-05-16,12:25,12:55,Drivers briefing – 2nd floor
-2026-05-16,12:45,13:45,Lunch
-2026-05-16,13:00,13:30,Hot Laps
-2026-05-16,13:55,14:35,XX Programme
-2026-05-16,14:40,15:10,Pre Race Show - Front Stretch
-2026-05-16,15:15,15:20,Recon Lap – Pirelli
-2026-05-16,15:30,16:00,Race 1 – Pirelli
-2026-05-16,16:05,16:40,F1 Clienti & SPC
-2026-05-16,16:45,16:50,Recon Lap – Shell
-2026-05-16,17:00,17:30,Race 1 – Shell
-2026-05-16,17:35,17:55,Passione Ferrari
-2026-05-16,17:40,18:00,All Classes
-2026-05-16,18:00,18:40,Club Challenge
+2026-05-14,17:35,20:00,Shakedown
+2026-05-15,07:00,07:30,Optional Track Walk
+2026-05-15,07:30,07:50,Track Recognition
+2026-05-15,08:00,08:30,Official Practice 1 - S/S-AM
+2026-05-15,09:20,09:50,Official Practice 1 – P/P-AM
+2026-05-15,10:25,10:55,Official Practice 2 - S/S-AM
+2026-05-15,12:10,13:10,Track Closed
+2026-05-15,12:50,12:50,Group Photo - Starting/Finish Line
+2026-05-15,13:10,13:40,Official Practice 2 – P/P-AM
+2026-05-15,14:15,14:45,Official Practice 3 - S/S-AM
+2026-05-15,15:00,15:30,Drivers briefing – Club Competizioni GT
+2026-05-15,15:20,15:50,Official Practice 3 – P/P-AM
+2026-05-15,15:55,16:50,Club Competizioni GT
+2026-05-15,16:00,16:20,Drivers briefing – Club Challenge
+2026-05-15,16:55,17:55,Club Challenge
+2026-05-15,18:00,18:40,Club Competizioni GT
+2026-05-15,18:45,19:45,Club Challenge
+2026-05-15,19:50,20:45,Club Competizioni GT
+2026-05-16,07:00,08:00,Optional Track Walk
+2026-05-16,08:00,08:15,Qualifying 1 – Pirelli-AM
+2026-05-16,08:20,08:35,Qualifying 1 – Pirelli
+2026-05-16,08:40,08:55,Qualifying 1 – Shell-AM
+2026-05-16,09:00,09:15,Qualifying 1 – Shell
+2026-05-16,10:05,10:40,Club Challenge
+2026-05-16,11:15,12:05,Club Competizioni GT
+2026-05-16,11:50,12:20,Drivers Briefing
+2026-05-16,12:30,12:50,Autograph Session - Podium
+2026-05-16,12:35,13:35,Track Closed
+2026-05-16,13:35,13:40,Recon Lap – Pirelli
+2026-05-16,13:45,14:15,Race 1 – Pirelli
+2026-05-16,14:50,14:55,Recon Lap – Shell
+2026-05-16,15:00,15:30,Race 1 – Shell
+2026-05-16,15:40,16:00,Podium
+2026-05-16,16:20,17:00,Club Competizioni GT
+2026-05-16,17:35,18:35,Club Challenge
+2026-05-16,18:40,19:00,Sponsor Hot Laps
 2026-05-17,07:00,07:45,Optional Track Walk
-2026-05-17,08:00,08:30,Club Challenge
-2026-05-17,08:35,08:50,Qualifying 1 – Shell-AM
-2026-05-17,08:55,09:10,Qualifying 1 – Shell
-2026-05-17,09:15,09:30,Qualifying 1 – Pirelli-AM
-2026-05-17,09:35,09:50,Qualifying 1 – Pirelli
-2026-05-17,09:55,10:35,XX Programme
-2026-05-17,10:40,11:50,Club Competizioni GT
-2026-05-17,11:55,12:30,F1 Clienti & SPC
-2026-05-17,12:25,12:55,Drivers briefing – 2nd floor
-2026-05-17,12:35,13:05,Club Challenge
-2026-05-17,13:10,13:25,Track Attack
-2026-05-17,13:25,14:25,Lunch
-2026-05-17,13:35,13:50,Track Attack Podium
-2026-05-17,14:00,14:20,Hot Laps
-2026-05-17,14:25,14:30,Recon Lap – Shell
-2026-05-17,14:40,15:10,Race 2 – Shell
-2026-05-17,15:15,15:50,F1 Clienti & SPC
-2026-05-17,15:55,16:00,Recon Lap – Pirelli
-2026-05-17,16:10,16:40,Race 2 – Pirelli
-2026-05-17,16:45,17:05,Passione Ferrari
-2026-05-17,16:50,17:10,All Classes
-2026-05-17,17:05,17:45,XX Programme
-2026-05-17,17:50,18:20,Club Challenge
-2026-05-17,18:25,19:25,Club Competizioni GT
-2026-05-17,19:30,20:00,Club Challenge
+2026-05-17,08:00,08:40,Club Challenge
+2026-05-17,08:45,09:00,Qualifying 1 – Shell-AM
+2026-05-17,09:05,09:20,Qualifying 1 – Shell
+2026-05-17,09:25,09:40,Qualifying 1 – Pirelli-AM
+2026-05-17,09:45,10:00,Qualifying 1 – Pirelli
+2026-05-17,11:20,12:20,Club Competizioni GT
+2026-05-17,12:25,12:55,Drivers Briefing
+2026-05-17,12:50,13:50,Track Closed
+2026-05-17,13:20,13:45,Sponsor Hot Laps
+2026-05-17,13:50,14:20,Club Challenge
+2026-05-17,14:20,14:30,Time Attack
+2026-05-17,14:40,14:55,Time Attack Podium
+2026-05-17,14:35,14:40,Recon Lap – Shell
+2026-05-17,14:45,15:15,Race 2 – Shell
+2026-05-17,15:50,15:55,Recon Lap – Pirelli
+2026-05-17,16:00,16:30,Race 2 – Pirelli
+2026-05-17,16:40,17:00,Podium
+2026-05-17,17:50,19:05,Club Challenge
+2026-05-17,19:10,20:45,Club Competizioni GT
 
