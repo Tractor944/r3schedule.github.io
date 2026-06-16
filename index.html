@@ -548,6 +548,16 @@ return dateFormat==="US"
 :`${dd}/${mm}/${yyyy}`;
 }
 
+function formatDayHeader(d){
+
+const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const shortDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+const dayName = days[d.getDay()]; // oppure shortDays[...]
+
+return `${dayName} ${formatDate(d)}`;
+}
+
 function formatTime(ms){
 const t=Math.max(0,Math.floor(ms/1000));
 return new Date(t*1000).toISOString().substr(11,8);
@@ -604,7 +614,7 @@ const colSpan = isMobile ? 3 : 5;
 
 table.innerHTML += `
 <tr class="dayRow">
-<td class="dayHeader" colspan="5">${formatDate(st)}</td>
+<td class="dayHeader" colspan="5">${formatDayHeader(st)}</td>
 </tr>`;
 }
 
