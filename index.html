@@ -21,7 +21,7 @@ height:100%;
 background:#222629;
 font-family:Arial,Helvetica,sans-serif;
 color:white;
-overflow:ajto;
+overflow:auto;
 }
 
 body{
@@ -69,9 +69,49 @@ font-weight:bold;
 }
 
 .next-session{
-font-size:2.5vw;
-opacity:.8;
 margin-top:2vh;
+}
+
+/* ================= UPCOMING LIST ================= */
+
+.upcoming-list{
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:.7vh;
+}
+
+.upcoming-item{
+display:flex;
+align-items:baseline;
+justify-content:center;
+gap:.9vw;
+
+font-size:1.9vw;
+opacity:.55;
+}
+
+.upcoming-item.first{
+font-size:2.5vw;
+opacity:1;
+}
+
+.upcoming-label{
+font-size:.7em;
+font-weight:bold;
+text-transform:uppercase;
+letter-spacing:.05em;
+color:#EE4B2B;
+}
+
+.upcoming-name{
+font-weight:bold;
+}
+
+.upcoming-time{
+font-weight:bold;
+color:#EE4B2B;
+white-space:nowrap;
 }
 
 /* ================= CLOCK ================= */
@@ -327,6 +367,20 @@ display:block;
 width:100%;
 }
 
+/* ===== UPCOMING LIST MOBILE ===== */
+.upcoming-list{
+gap:.4vh;
+}
+
+.upcoming-item{
+font-size:14px;
+gap:6px;
+}
+
+.upcoming-item.first{
+font-size:17px;
+}
+
 /* test mobile */
 /* ================= SCHEDULE BUTTON ================= */
 
@@ -430,8 +484,7 @@ box-shadow:0 4px 10px rgba(0,0,0,0.4);
 <div id="title" class="session-name"></div>
 <div id="timer" class="countdown"></div>
 <div class="next-session">
-<div id="nextSession"></div>
-<div id="nextStart" class="next-start"></div>
+<div id="upcomingList" class="upcoming-list"></div>
 </div>
 </div>
 
@@ -465,6 +518,9 @@ let timeOffset=0;
 let scheduleVisible=false;
 let timeFormat24 = false;
 
+/* quanti eventi mostrare sotto il countdown */
+const UPCOMING_COUNT = 3;
+
 /************* SCHEDULE *************/
 
 let schedule = [];
@@ -494,13 +550,16 @@ end: date.trim()+"T"+end.trim()+":00"
 const titleEl=title;
 const timerEl=timer;
 const dateEl=date;
-const nextStartEl = nextStart;
-const nextEl=nextSession;
+const upcomingEl=upcomingList;
 const clockTime=currentTime;
 const clockDate=currentDate;
 const overlay=scheduleOverlay;
 const table=scheduleTable;
 
+/************* CONSTANTS *************/
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const SHORT_DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const UPCOMING_LABELS = ["Next:","Then:","Then:"];
 
 /************* NETWORK TIME *************/
 async function syncNetworkTime(){
@@ -550,10 +609,7 @@ return dateFormat==="US"
 
 function formatDayHeader(d){
 
-const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-const shortDays = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-const dayName = days[d.getDay()]; // oppure shortDays[...]
+const dayName = DAYS[d.getDay()];
 
 return `${dayName} ${formatDate(d)}`;
 }
@@ -609,9 +665,6 @@ const dayKey=st.toDateString();
 if(dayKey !== currentDay){
     currentDay = dayKey;
 
-const isMobile = window.innerWidth <= 768;
-const colSpan = isMobile ? 3 : 5;
-
 table.innerHTML += `
 <tr class="dayRow">
 <td class="dayHeader" colspan="5">${formatDayHeader(st)}</td>
@@ -633,6 +686,49 @@ table.innerHTML+=`
 });
 }
 
+/************* UPCOMING SESSIONS *************/
+
+/* cache: evita di riscrivere il DOM 4 volte al secondo */
+let upcomingKey = "";
+
+function renderUpcoming(list, n){
+
+/* chiave di stato: cambia solo quando serve ridisegnare */
+const key = list.map(s => s.start + "|" + s.name).join("//")
+          + "#" + (timeFormat24 ? "24" : "12")
+          + "#" + n.toDateString();
+
+if(key === upcomingKey) return;
+upcomingKey = key;
+
+if(!list.length){
+upcomingEl.innerHTML =
+`<div class="upcoming-item first">
+<span class="upcoming-name">Event Complete</span>
+</div>`;
+return;
+}
+
+upcomingEl.innerHTML = list.map((s,i)=>{
+
+const st = new Date(s.start);
+
+/* mostra il giorno solo se la sessione non è oggi */
+const dayPrefix =
+st.toDateString() === n.toDateString()
+? ""
+: SHORT_DAYS[st.getDay()] + " ";
+
+return `
+<div class="upcoming-item ${i===0 ? "first" : ""}">
+<span class="upcoming-label">${UPCOMING_LABELS[i] || "Then:"}</span>
+<span class="upcoming-name">${s.name}</span>
+<span class="upcoming-time">${dayPrefix}${formatClock(st)}</span>
+</div>`;
+
+}).join("");
+}
+
 /************* FULLSCREEN *************/
 function enterFullscreen(){
 document.documentElement.requestFullscreen().catch(()=>{});
@@ -650,8 +746,7 @@ clockTime.textContent=formatClock(n);
 clockDate.textContent=formatDate(n);
 dateEl.textContent=formatDate(n);
 
-let nextName="";
-let nextStart="";
+let upcoming=[];
 
 for(let i=0;i<schedule.length;i++){
 
@@ -659,30 +754,28 @@ const s=schedule[i];
 const start=new Date(s.start);
 const end=new Date(s.end);
 
+/* sessione non ancora iniziata */
 if(n<start){
 titleEl.textContent="Start of "+s.name;
 timerEl.textContent=formatTime(start-n);
-nextName=s.name;
-nextStart=formatClock(start);
+
+/* la prima della lista è quella del countdown */
+upcoming=schedule.slice(i, i+UPCOMING_COUNT);
 break;
 }
 
+/* sessione in corso */
 if(n>=start&&n<end){
 titleEl.textContent="Now: "+s.name;
 timerEl.textContent=formatTime(end-n);
-if(schedule[i+1]){
-nextName=schedule[i+1].name;
-nextStart=formatClock(
-    new Date(schedule[i+1].start)
-);
-}
+
+/* quella in corso è già nel titolo: parto dalla successiva */
+upcoming=schedule.slice(i+1, i+1+UPCOMING_COUNT);
 break;
 }
 }
 
-nextEl.textContent=
-nextName?("Next: "+nextName):"Event Complete";
-nextStartEl.textContent=nextStart;
+renderUpcoming(upcoming, n);
 
 // if(scheduleVisible) buildSchedule();
 }
@@ -702,6 +795,8 @@ scheduleVisible=!scheduleVisible;
 
 overlay.style.display=
 scheduleVisible?"block":"none";
+
+document.body.classList.toggle("showSchedule", scheduleVisible);
 
 buildSchedule();
 
@@ -751,5 +846,3 @@ F - Fullscreen
 </div>
 </body>
 </html>
-
-
