@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>R3 Timing Board – Admin</title>
+<style>
+:root{
+  --bg:#222629;
+  --panel:#2c3135;
+  --line:#40474d;
+  --text:#f2f2f2;
+  --muted:#a4acb3;
+  --accent:#EE4B2B;
+  --ok:#00ff88;
+  --err:#ff6b6b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+body{padding:5vh 16px 10vh;display:flex;justify-content:center}
+main{width:100%;max-width:560px}
+h1{font-size:24px;margin:0 0 6px}
+p.lead{margin:0 0 28px;color:var(--muted);line-height:1.5}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;margin-bottom:20px}
+h2{font-size:16px;margin:0 0 16px}
+label{display:block;font-size:14px;font-weight:bold;margin:18px 0 6px}
+label:first-of-type{margin-top:0}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0;line-height:1.45}
+input[type=text],input[type=password]{
+  width:100%;padding:10px 12px;font-size:15px;color:var(--text);
+  background:var(--bg);border:1px solid var(--line);border-radius:6px
+}
+input[type=file]{width:100%;font-size:14px;color:var(--muted)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.check{display:flex;gap:8px;align-items:center;font-weight:normal;margin:12px 0 0;font-size:14px;color:var(--muted)}
+button{
+  margin-top:20px;padding:11px 20px;font-size:15px;font-weight:bold;color:#fff;
+  background:var(--accent);border:0;border-radius:8px;cursor:pointer
+}
+button:disabled{opacity:.5;cursor:default}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.logoPreview{margin-top:10px;max-height:90px;max-width:100%;display:none;background:#111;padding:6px;border-radius:6px}
+#log{
+  margin-top:18px;font-size:14px;line-height:1.6;white-space:pre-wrap;
+  font-family:monospace;color:var(--muted)
+}
+#log .ok{color:var(--ok)}
+#log .err{color:var(--err)}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main>
+  <h1>R3 Timing Board – Admin</h1>
+  <p class="lead">Carica un nuovo logo e un nuovo schedule.csv e aggiorna i titoli. Tutto viene salvato in un unico commit sulla repo.</p>
+
+  <!-- ACCESSO -->
+  <section id="loginBox">
+    <h2>Accesso</h2>
+    <label for="token">GitHub Personal Access Token</label>
+    <input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+    <p class="hint">Token "fine-grained" limitato a questa repo, con permesso <b>Contents: Read and write</b>. GitHub non accetta più username e password per le API.</p>
+    <label class="check"><input id="remember" type="checkbox"> Ricorda su questo dispositivo</label>
+    <button id="loginBtn">Accedi</button>
+  </section>
+
+  <!-- CONTENUTI -->
+  <section id="editBox" hidden>
+    <h2>Nuovi contenuti</h2>
+
+    <label for="pageTitle">Titolo pagina (tag &lt;title&gt;)</label>
+    <input id="pageTitle" type="text">
+
+    <label for="scheduleTitle">Titolo dello schedule (intestazione sopra la tabella)</label>
+    <input id="scheduleTitle" type="text">
+
+    <label for="logoFile">Logo</label>
+    <input id="logoFile" type="file" accept="image/*">
+    <p class="hint">Lascia vuoto per tenere quello attuale. Qualsiasi immagine viene convertita in PNG e salvata come logo.png.</p>
+    <img id="logoPreview" class="logoPreview" alt="Anteprima logo">
+
+    <label for="csvFile">schedule.csv</label>
+    <input id="csvFile" type="file" accept=".csv,text/csv">
+    <p class="hint">Lascia vuoto per tenere quello attuale. Formato: intestazione + righe <code>YYYY-MM-DD,HH:MM,HH:MM,Nome sessione</code>.</p>
+
+    <button id="publishBtn">Pubblica</button>
+    <button id="logoutBtn" class="ghost">Esci</button>
+  </section>
+
+  <div id="log" role="status" aria-live="polite"></div>
+</main>
+
+<script>
+/************* CONFIG *************/
+const OWNER  = "Tractor944";
+const REPO   = "r3schedule.github.io";
+const BRANCH = "main";
+const API    = `https://api.github.com/repos/${OWNER}/${REPO}`;
+const TOKEN_KEY = "r3admin_token";
+
+let token = "";
+let current = { title: "", h1: "" };
+
+const $ = id => document.getElementById(id);
+
+/************* UTIL *************/
+function log(msg, cls){
+  const line = document.createElement("div");
+  if(cls) line.className = cls;
+  line.textContent = msg;
+  $("log").appendChild(line);
+}
+function clearLog(){ $("log").textContent = ""; }
+
+function escapeHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function unescapeHtml(s){
+  return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&");
+}
+function bufToB64(buf){
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  for(let i=0;i<bytes.length;i+=0x8000){
+    bin += String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000));
+  }
+  return btoa(bin);
+}
+
+async function gh(path, opts = {}){
+  const res = await fetch(path.startsWith("http") ? path : API + path, {
+    ...opts,
+    cache: "no-store",
+    headers: {
+      "Authorization": "Bearer " + token,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(opts.headers || {})
+    }
+  });
+  if(!res.ok){
+    let msg = res.statusText;
+    try{ msg = (await res.json()).message || msg; }catch{}
+    throw new Error(res.status + " – " + msg);
+  }
+  return res;
+}
+function send(path, body, method = "POST"){
+  return gh(path, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  }).then(r => r.json());
+}
+
+/************* INDEX.HTML PARSING *************/
+const RE_TITLE = /(<title>)([\s\S]*?)(<\/title>)/;
+const RE_H1    = /(<div id="scheduleOverlay"[^>]*>\s*<h1>)([\s\S]*?)(<\/h1>)/;
+
+async function fetchIndexHtml(){
+  const r = await gh(`/contents/index.html?ref=${BRANCH}`, {
+    headers: { "Accept": "application/vnd.github.raw+json" }
+  });
+  return r.text();
+}
+
+/************* LOGIN *************/
+async function login(){
+  clearLog();
+  token = $("token").value.trim();
+  if(!token){ log("Inserisci il token.", "err"); return; }
+
+  $("loginBtn").disabled = true;
+  try{
+    const repo = await (await gh("")).json();
+    if(repo.permissions && repo.permissions.push === false){
+      throw new Error("Il token non ha permesso di scrittura su questa repo.");
+    }
+
+    const html = await fetchIndexHtml();
+    const t = html.match(RE_TITLE);
+    const h = html.match(RE_H1);
+    current.title = t ? unescapeHtml(t[2].trim()) : "";
+    current.h1    = h ? unescapeHtml(h[2].trim()) : "";
+    $("pageTitle").value = current.title;
+    $("scheduleTitle").value = current.h1;
+    if(!t) log("Attenzione: <title> non trovato in index.html.", "err");
+    if(!h) log("Attenzione: <h1> dello schedule non trovato in index.html.", "err");
+
+    const store = $("remember").checked ? localStorage : sessionStorage;
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    try{ store.setItem(TOKEN_KEY, token); }catch{}
+
+    $("loginBox").hidden = true;
+    $("editBox").hidden = false;
+    log("Connesso a " + OWNER + "/" + REPO + " (" + BRANCH + ").", "ok");
+  }catch(e){
+    token = "";
+    log("Accesso non riuscito: " + e.message, "err");
+  }finally{
+    $("loginBtn").disabled = false;
+  }
+}
+
+function logout(){
+  token = "";
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  $("token").value = "";
+  $("editBox").hidden = true;
+  $("loginBox").hidden = false;
+  clearLog();
+}
+
+/************* FILE HANDLING *************/
+function logoToPngB64(file){
+  return new Promise((resolve, reject) => {
+    if(file.type === "image/png"){
+      file.arrayBuffer().then(b => resolve(bufToB64(b))).catch(reject);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext("2d").drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      c.toBlob(blob => {
+        if(!blob) return reject(new Error("Conversione del logo in PNG non riuscita."));
+        blob.arrayBuffer().then(b => resolve(bufToB64(b))).catch(reject);
+      }, "image/png");
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Il file del logo non è un'immagine valida.")); };
+    img.src = url;
+  });
+}
+
+async function readCsv(file){
+  let text = await file.text();
+  text = text.replace(/^\uFEFF/, "");
+  const rows = text.trim().split(/\r?\n/);
+  if(rows.length < 2) throw new Error("schedule.csv: servono l'intestazione e almeno una riga.");
+  rows.slice(1).forEach((r, i) => {
+    const cols = r.split(",");
+    const ok = cols.length >= 4
+      && /^\d{4}-\d{2}-\d{2}$/.test(cols[0].trim())
+      && /^\d{1,2}:\d{2}$/.test(cols[1].trim())
+      && /^\d{1,2}:\d{2}$/.test(cols[2].trim());
+    if(!ok) throw new Error(`schedule.csv: riga ${i+2} non valida → "${r}"`);
+  });
+  return { b64: bufToB64(new TextEncoder().encode(text)), count: rows.length - 1 };
+}
+
+/************* PUBLISH *************/
+async function publish(){
+  clearLog();
+  const newTitle = $("pageTitle").value.trim();
+  const newH1    = $("scheduleTitle").value.trim();
+  const logoFile = $("logoFile").files[0];
+  const csvFile  = $("csvFile").files[0];
+
+  if(!newTitle || !newH1){ log("Titolo pagina e titolo schedule non possono essere vuoti.", "err"); return; }
+
+  $("publishBtn").disabled = true;
+  try{
+    const files = [];
+    const changes = [];
+
+    // index.html (riletto adesso, per non sovrascrivere modifiche recenti)
+    let html = await fetchIndexHtml();
+    let newHtml = html;
+    if(newTitle !== current.title){
+      if(!RE_TITLE.test(newHtml)) throw new Error("<title> non trovato in index.html.");
+      newHtml = newHtml.replace(RE_TITLE, (_, a, __, c) => a + escapeHtml(newTitle) + c);
+      changes.push("titolo pagina");
+    }
+    if(newH1 !== current.h1){
+      if(!RE_H1.test(newHtml)) throw new Error("<h1> dello schedule non trovato in index.html.");
+      newHtml = newHtml.replace(RE_H1, (_, a, __, c) => a + escapeHtml(newH1) + c);
+      changes.push("titolo schedule");
+    }
+    if(newHtml !== html){
+      files.push({ path: "index.html", b64: bufToB64(new TextEncoder().encode(newHtml)) });
+    }
+
+    if(logoFile){
+      files.push({ path: "logo.png", b64: await logoToPngB64(logoFile) });
+      changes.push("logo");
+    }
+    if(csvFile){
+      const csv = await readCsv(csvFile);
+      files.push({ path: "schedule.csv", b64: csv.b64 });
+      changes.push(`schedule.csv (${csv.count} sessioni)`);
+    }
+
+    if(!files.length){ log("Nessuna modifica da pubblicare."); return; }
+
+    log("Carico: " + changes.join(", ") + "…");
+
+    const ref = await (await gh(`/git/ref/heads/${BRANCH}`)).json();
+    const headSha = ref.object.sha;
+    const head = await (await gh(`/git/commits/${headSha}`)).json();
+
+    const tree = [];
+    for(const f of files){
+      const blob = await send("/git/blobs", { content: f.b64, encoding: "base64" });
+      tree.push({ path: f.path, mode: "100644", type: "blob", sha: blob.sha });
+    }
+    const newTree = await send("/git/trees", { base_tree: head.tree.sha, tree });
+    const commit  = await send("/git/commits", {
+      message: "Admin: aggiorna " + changes.join(", "),
+      tree: newTree.sha,
+      parents: [headSha]
+    });
+    await send(`/git/refs/heads/${BRANCH}`, { sha: commit.sha }, "PATCH");
+
+    current.title = newTitle;
+    current.h1 = newH1;
+    $("logoFile").value = "";
+    $("csvFile").value = "";
+    $("logoPreview").style.display = "none";
+
+    log("Pubblicato (commit " + commit.sha.slice(0,7) + ").", "ok");
+    log("GitHub Pages impiega circa 1–2 minuti ad aggiornare il sito. Se vedi ancora il vecchio logo, ricarica forzando la cache.");
+  }catch(e){
+    log("Errore: " + e.message, "err");
+  }finally{
+    $("publishBtn").disabled = false;
+  }
+}
+
+/************* EVENTS *************/
+$("loginBtn").addEventListener("click", login);
+$("token").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
+$("logoutBtn").addEventListener("click", logout);
+$("publishBtn").addEventListener("click", publish);
+
+$("logoFile").addEventListener("change", e => {
+  const f = e.target.files[0];
+  const img = $("logoPreview");
+  if(!f){ img.style.display = "none"; return; }
+  img.src = URL.createObjectURL(f);
+  img.style.display = "block";
+});
+
+// token salvato in precedenza
+const saved = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);
+if(saved){
+  $("token").value = saved;
+  $("remember").checked = !!localStorage.getItem(TOKEN_KEY);
+  login();
+}
+</script>
+</body>
+</html>
