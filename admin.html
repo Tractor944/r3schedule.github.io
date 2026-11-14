@@ -276,6 +276,7 @@ async function readCsv(file){
       && /^\d{4}-\d{2}-\d{2}$/.test(cols[0].trim())
       && /^\d{1,2}:\d{2}$/.test(cols[1].trim())
       && /^\d{1,2}:\d{2}$/.test(cols[2].trim());
+    // colonna finale opzionale "Extra": vuota oppure "+N Lap" (es. gara 30' + 1 giro)
     if(!ok) throw new Error(`schedule.csv: riga ${i+2} non valida → "${r}"`);
   });
   return { b64: bufToB64(new TextEncoder().encode(text)), count: rows.length - 1 };

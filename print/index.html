@@ -114,7 +114,12 @@ async function load() {
   const lines = (await res.text()).replace(/\r/g, "").trim().split("\n").slice(1).filter(l => l.trim());
   const rows = lines.map(l => {
     const [date, start, end, ...rest] = l.split(",");
-    return { date: date.trim(), start: start.trim(), end: end.trim(), desc: rest.join(",").trim() };
+    // optional last column "+1 Lap": End = end of the timed part
+    let extra = "";
+    if (rest.length > 1 && /^\s*(\+\s*\d+\s*laps?)?\s*$/i.test(rest[rest.length - 1])) {
+      extra = rest.pop().trim().replace(/^\+\s*(\d+)\s*laps?$/i, (m, n) => `+${n} Lap${n === "1" ? "" : "s"}`);
+    }
+    return { date: date.trim(), start: start.trim(), end: end.trim(), desc: rest.join(",").trim(), extra };
   }).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
   if (!rows.length) throw new Error("schedule.csv is empty");
 
@@ -132,7 +137,7 @@ async function load() {
       let name = r.desc;
       if (k === "race" && !/race/i.test(name)) name += " – Race";
       html += `<tr class="${k}"><td class="time">${r.start}<span>–</span>${r.end}</td>` +
-              `<td class="dur">${dur(r.start, r.end)}</td><td class="desc">${esc(name)}</td>` +
+              `<td class="dur">${dur(r.start, r.end)}${r.extra ? `<br>${r.extra}` : ""}</td><td class="desc">${esc(name)}</td>` +
               `<td class="tag"><span>${LABEL[k]}</span></td></tr>`;
     }
     html += "</table></div>";

@@ -531,14 +531,22 @@ async function loadCSV(){
 const res = await fetch("schedule.csv");
 const text = await res.text();
 
-const rows = text.trim().split("\n").slice(1);
+const rows = text.replace(/^﻿/,"").replace(/\r/g,"").trim().split("\n").slice(1).filter(r => r.trim());
 
 schedule = rows.map(r => {
 
-const [date,start,end,title] = r.split(",");
+const [date,start,end,...rest] = r.split(",");
+
+/* colonna opzionale finale: "+1 Lap" = durata a tempo + giri extra.
+   End nel CSV = fine della parte a tempo (es. 30'). */
+let extra = "";
+if(rest.length > 1 && /^\s*(\+\s*\d+\s*laps?)?\s*$/i.test(rest[rest.length-1])){
+extra = rest.pop().trim().replace(/^\+\s*(\d+)\s*laps?$/i, (m,n) => `+${n} Lap${n==="1"?"":"s"}`);
+}
 
 return {
-name: title.trim(),
+name: rest.join(",").trim(),
+extra: extra,
 start: date.trim()+"T"+start.trim()+":00",
 end: date.trim()+"T"+end.trim()+":00"
 };
@@ -681,7 +689,7 @@ table.innerHTML+=`
 <td>${formatDate(st)}</td>
 <td>${formatClock(st)}</td>
 <td>${formatClock(en)}</td>
-<td>${formatDuration(st,en)}</td>
+<td>${formatDuration(st,en)}${s.extra ? " " + s.extra : ""}</td>
 <td>${s.name}</td>
 </tr>`;
 });
@@ -767,7 +775,7 @@ break;
 
 /* sessione in corso */
 if(n>=start&&n<end){
-titleEl.textContent="Now: "+s.name;
+titleEl.textContent="Now: "+s.name+(s.extra ? " ("+s.extra+")" : "");
 timerEl.textContent=formatTime(end-n);
 
 /* quella in corso è già nel titolo: parto dalla successiva */
