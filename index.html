@@ -153,6 +153,7 @@ display:none;
 overflow-y:auto; /* solo verticale */
 -webkit-overflow-scrolling:touch; /* smooth mobile */
 padding:3vh;
+box-sizing:border-box; /* padding incluso nel 100%: non esce a destra */
 overscroll-behavior:contain;
 }
 
@@ -446,6 +447,11 @@ box-shadow:none;
 body{
 padding-bottom:56px;
 box-sizing:border-box;
+}
+
+/* schedule: margini laterali stretti e spazio sotto per la barra pulsanti */
+.scheduleOverlay{
+padding:16px 12px 72px;
 }
 
 /* su telefono le scorciatoie da tastiera non servono */
