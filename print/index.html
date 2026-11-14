@@ -29,7 +29,7 @@ table { width: 100%; border-collapse: collapse; }
 td { padding: 2.1mm 2mm; font-size: 11pt; border-bottom: .2mm solid #ddd; vertical-align: middle; }
 td.time { width: 34mm; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12pt; white-space: nowrap; }
 td.time span { color: #999; margin: 0 1.2mm; font-weight: 400; }
-td.dur { width: 15mm; color: #888; font-size: 9pt; }
+td.dur { width: 22mm; color: #888; font-size: 9pt; white-space: nowrap; }
 td.desc { font-weight: 600; }
 td.tag { width: 28mm; text-align: right; }
 td.tag span { display: inline-block; font-size: 7.5pt; font-weight: 800; letter-spacing: 1px; padding: .8mm 2mm; border-radius: 1mm; background: #eee; color: #444; }
@@ -137,7 +137,7 @@ async function load() {
       let name = r.desc;
       if (k === "race" && !/race/i.test(name)) name += " – Race";
       html += `<tr class="${k}"><td class="time">${r.start}<span>–</span>${r.end}</td>` +
-              `<td class="dur">${dur(r.start, r.end)}${r.extra ? `<br>${r.extra}` : ""}</td><td class="desc">${esc(name)}</td>` +
+              `<td class="dur">${dur(r.start, r.end)}${r.extra ? ` ${r.extra}` : ""}</td><td class="desc">${esc(name)}</td>` +
               `<td class="tag"><span>${LABEL[k]}</span></td></tr>`;
     }
     html += "</table></div>";
