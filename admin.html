@@ -41,6 +41,7 @@ button{
 button:disabled{opacity:.5;cursor:default}
 button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
 .logoPreview{margin-top:10px;max-height:90px;max-width:100%;display:none;background:#111;padding:6px;border-radius:6px}
+.logoPreview.light{background:#fff}
 #log{
   margin-top:18px;font-size:14px;line-height:1.6;white-space:pre-wrap;
   font-family:monospace;color:var(--muted)
@@ -53,7 +54,7 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut
 <body>
 <main>
   <h1>R3 Timing Board – Admin</h1>
-  <p class="lead">Carica un nuovo logo e un nuovo schedule.csv e aggiorna i titoli. Tutto viene salvato in un unico commit sulla repo.</p>
+  <p class="lead">Carica loghi e schedule.csv e aggiorna titolo e pista. Tutto viene salvato in un unico commit sulla repo.</p>
 
   <!-- ACCESSO -->
   <section id="loginBox">
@@ -74,11 +75,21 @@ button.ghost{background:transparent;border:1px solid var(--line);color:var(--mut
 
     <label for="scheduleTitle">Titolo dello schedule (intestazione sopra la tabella)</label>
     <input id="scheduleTitle" type="text">
+    <p class="hint">Usato anche come titolo evento nella pagina di stampa (/print).</p>
 
-    <label for="logoFile">Logo</label>
+    <label for="venue">Pista / circuito</label>
+    <input id="venue" type="text" placeholder="es. Circuit de Barcelona-Catalunya">
+    <p class="hint">Compare nell'intestazione della pagina di stampa, insieme alle date prese dallo schedule.</p>
+
+    <label for="logoFile">Logo schermo (sfondo scuro)</label>
     <input id="logoFile" type="file" accept="image/*">
     <p class="hint">Lascia vuoto per tenere quello attuale. Qualsiasi immagine viene convertita in PNG e salvata come logo.png.</p>
-    <img id="logoPreview" class="logoPreview" alt="Anteprima logo">
+    <img id="logoPreview" class="logoPreview" alt="Anteprima logo schermo">
+
+    <label for="printLogoFile">Logo stampa (sfondo bianco)</label>
+    <input id="printLogoFile" type="file" accept="image/*">
+    <p class="hint">Lascia vuoto per tenere quello attuale. Gli SVG restano vettoriali (logo_print.svg), le altre immagini diventano logo_print.png.</p>
+    <img id="printLogoPreview" class="logoPreview light" alt="Anteprima logo stampa">
 
     <label for="csvFile">schedule.csv</label>
     <input id="csvFile" type="file" accept=".csv,text/csv">
@@ -100,7 +111,7 @@ const API    = `https://api.github.com/repos/${OWNER}/${REPO}`;
 const TOKEN_KEY = "r3admin_token";
 
 let token = "";
-let current = { title: "", h1: "" };
+let current = { title: "", h1: "", venue: "" };
 
 const $ = id => document.getElementById(id);
 
@@ -117,7 +128,10 @@ function escapeHtml(s){
   return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 }
 function unescapeHtml(s){
-  return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&");
+  return s.replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"').replace(/&amp;/g,"&");
+}
+function escapeAttr(s){
+  return escapeHtml(s).replace(/"/g,"&quot;");
 }
 function bufToB64(buf){
   const bytes = new Uint8Array(buf);
@@ -157,6 +171,15 @@ function send(path, body, method = "POST"){
 /************* INDEX.HTML PARSING *************/
 const RE_TITLE = /(<title>)([\s\S]*?)(<\/title>)/;
 const RE_H1    = /(<div id="scheduleOverlay"[^>]*>\s*<h1>)([\s\S]*?)(<\/h1>)/;
+const RE_VENUE = /(<meta name="r3-venue" content=")([^"]*)(">)/;
+const RE_PLOGO = /(<meta name="r3-print-logo" content=")([^"]*)(">)/;
+
+// imposta il valore di un <meta>; se manca lo aggiunge subito dopo </title>
+function setMeta(html, re, name, value){
+  if(re.test(html)) return html.replace(re, (_, a, __, c) => a + escapeAttr(value) + c);
+  if(!RE_TITLE.test(html)) throw new Error("<title> non trovato in index.html.");
+  return html.replace(RE_TITLE, m => m + `\n<meta name="${name}" content="${escapeAttr(value)}">`);
+}
 
 async function fetchIndexHtml(){
   const r = await gh(`/contents/index.html?ref=${BRANCH}`, {
@@ -183,8 +206,11 @@ async function login(){
     const h = html.match(RE_H1);
     current.title = t ? unescapeHtml(t[2].trim()) : "";
     current.h1    = h ? unescapeHtml(h[2].trim()) : "";
+    const v = html.match(RE_VENUE);
+    current.venue = v ? unescapeHtml(v[2].trim()) : "";
     $("pageTitle").value = current.title;
     $("scheduleTitle").value = current.h1;
+    $("venue").value = current.venue;
     if(!t) log("Attenzione: <title> non trovato in index.html.", "err");
     if(!h) log("Attenzione: <h1> dello schedule non trovato in index.html.", "err");
 
@@ -262,6 +288,8 @@ async function publish(){
   const newH1    = $("scheduleTitle").value.trim();
   const logoFile = $("logoFile").files[0];
   const csvFile  = $("csvFile").files[0];
+  const newVenue = $("venue").value.trim();
+  const printLogoFile = $("printLogoFile").files[0];
 
   if(!newTitle || !newH1){ log("Titolo pagina e titolo schedule non possono essere vuoti.", "err"); return; }
 
@@ -282,6 +310,18 @@ async function publish(){
       if(!RE_H1.test(newHtml)) throw new Error("<h1> dello schedule non trovato in index.html.");
       newHtml = newHtml.replace(RE_H1, (_, a, __, c) => a + escapeHtml(newH1) + c);
       changes.push("titolo schedule");
+    }
+    if(newVenue !== current.venue){
+      newHtml = setMeta(newHtml, RE_VENUE, "r3-venue", newVenue);
+      changes.push("pista");
+    }
+    if(printLogoFile){
+      const isSvg = printLogoFile.type === "image/svg+xml" || /\.svg$/i.test(printLogoFile.name);
+      const path = isSvg ? "logo_print.svg" : "logo_print.png";
+      const b64 = isSvg ? bufToB64(await printLogoFile.arrayBuffer()) : await logoToPngB64(printLogoFile);
+      files.push({ path, b64 });
+      newHtml = setMeta(newHtml, RE_PLOGO, "r3-print-logo", path);
+      changes.push("logo stampa");
     }
     if(newHtml !== html){
       files.push({ path: "index.html", b64: bufToB64(new TextEncoder().encode(newHtml)) });
@@ -320,7 +360,10 @@ async function publish(){
 
     current.title = newTitle;
     current.h1 = newH1;
+    current.venue = newVenue;
     $("logoFile").value = "";
+    $("printLogoFile").value = "";
+    $("printLogoPreview").style.display = "none";
     $("csvFile").value = "";
     $("logoPreview").style.display = "none";
 
@@ -339,13 +382,17 @@ $("token").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
 $("logoutBtn").addEventListener("click", logout);
 $("publishBtn").addEventListener("click", publish);
 
-$("logoFile").addEventListener("change", e => {
-  const f = e.target.files[0];
-  const img = $("logoPreview");
-  if(!f){ img.style.display = "none"; return; }
-  img.src = URL.createObjectURL(f);
-  img.style.display = "block";
-});
+function bindPreview(inputId, imgId){
+  $(inputId).addEventListener("change", e => {
+    const f = e.target.files[0];
+    const img = $(imgId);
+    if(!f){ img.style.display = "none"; return; }
+    img.src = URL.createObjectURL(f);
+    img.style.display = "block";
+  });
+}
+bindPreview("logoFile", "logoPreview");
+bindPreview("printLogoFile", "printLogoPreview");
 
 // token salvato in precedenza
 const saved = sessionStorage.getItem(TOKEN_KEY) || localStorage.getItem(TOKEN_KEY);

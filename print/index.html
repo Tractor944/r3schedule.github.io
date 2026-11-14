@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>R3 Motorsports – Timetable</title>
+<style>
+@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html { background: #e8e8e8; }
+body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; color: #1a1a1a; }
+
+/* A4 sheet */
+.page { width: 210mm; height: 297mm; margin: 10mm auto; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.2);
+        display: flex; flex-direction: column; overflow: hidden; }
+header { padding: 10mm 14mm 6mm; display: flex; align-items: center; gap: 10mm; border-bottom: 1.2mm solid #e3241d; }
+header img { height: 30mm; }
+.t1 { font-size: 9pt; letter-spacing: 3px; color: #e3241d; font-weight: 700; text-transform: uppercase; }
+.t2 { font-size: 25pt; font-weight: 800; line-height: 1.05; margin: 1.5mm 0; }
+.t3 { font-size: 10.5pt; color: #555; }
+main { flex: 1; padding: 7mm 14mm 0; overflow: hidden; }
+#fit { transform-origin: top left; }
+.note { font-size: 8.5pt; color: #666; text-align: right; margin-bottom: 3mm; }
+.day { margin-bottom: 4.2mm; break-inside: avoid; }
+.dayhead { display: flex; align-items: baseline; gap: 3mm; border-bottom: .6mm solid #111; padding-bottom: 1mm; margin-bottom: 1mm; }
+.dow { font-size: 13pt; font-weight: 800; text-transform: uppercase; }
+.dt { font-size: 10.5pt; color: #555; }
+table { width: 100%; border-collapse: collapse; }
+td { padding: 2.1mm 2mm; font-size: 11pt; border-bottom: .2mm solid #ddd; vertical-align: middle; }
+td.time { width: 34mm; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12pt; white-space: nowrap; }
+td.time span { color: #999; margin: 0 1.2mm; font-weight: 400; }
+td.dur { width: 15mm; color: #888; font-size: 9pt; }
+td.desc { font-weight: 600; }
+td.tag { width: 28mm; text-align: right; }
+td.tag span { display: inline-block; font-size: 7.5pt; font-weight: 800; letter-spacing: 1px; padding: .8mm 2mm; border-radius: 1mm; background: #eee; color: #444; }
+tr.race td.tag span { background: #e3241d; color: #fff; }
+tr.q td.tag span { background: #111; color: #fff; }
+tr.fp td.tag span { background: #fde9e8; color: #b51b15; }
+tr.race td.desc { color: #c41e18; }
+footer { margin: 0 14mm; padding: 4mm 0 7mm; font-size: 8pt; color: #888; display: flex; justify-content: space-between; border-top: .2mm solid #ddd; }
+.err { color: #c41e18; font-weight: 700; }
+
+/* screen-only toolbar */
+.bar { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; z-index: 10; }
+.bar button, .bar a { font: 600 14px "Segoe UI", Arial, sans-serif; padding: 9px 16px; border-radius: 6px; border: 0; cursor: pointer;
+                      background: #e3241d; color: #fff; text-decoration: none; }
+.bar a { background: #333; }
+
+@media print {
+  html { background: #fff; }
+  .page { margin: 0; box-shadow: none; }
+  .bar { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="bar"><a href="../">&larr; Schedule</a><button onclick="window.print()">Print</button></div>
+
+<div class="page">
+  <header>
+    <img id="logo" alt="R3 Motorsports – Racing with Ferrari">
+    <div>
+      <div class="t1" id="eyebrow"></div>
+      <div class="t2">Event Timetable</div>
+      <div class="t3" id="sub"></div>
+    </div>
+  </header>
+  <main><div id="fit"><div class="note">All times local</div><div id="list">Loading…</div></div></main>
+  <footer><span>R3 Motorsports</span><span id="stamp"></span></footer>
+</div>
+
+<script>
+/* Event title, venue and print logo are read from ../index.html (set them from admin.html).
+   Dates and year come from ../schedule.csv. Nothing to edit here. */
+async function loadSettings() {
+  const out = { title: "", venue: "", logo: "logo_print.svg" };
+  try {
+    const res = await fetch("../index.html", { cache: "no-store" });
+    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+    const h1 = doc.querySelector("#scheduleOverlay h1");
+    const venue = doc.querySelector('meta[name="r3-venue"]');
+    const logo = doc.querySelector('meta[name="r3-print-logo"]');
+    if (h1) out.title = h1.textContent.trim();
+    if (venue) out.venue = venue.content.trim();
+    if (logo && logo.content.trim()) out.logo = logo.content.trim();
+  } catch (e) { /* keep defaults */ }
+  return out;
+}
+
+const LABEL = { test: "TEST", brief: "BRIEFING", fp: "PRACTICE", q: "QUALIFYING", race: "RACE" };
+
+function kind(s) {
+  s = s.toLowerCase();
+  if (s.includes("test")) return "test";
+  if (s.includes("briefing")) return "brief";
+  if (s.includes("practice")) return "fp";
+  if (s.includes("qualifying")) return "q";
+  return "race";
+}
+const mins = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+function dur(a, b) {
+  const m = mins(b) - mins(a);
+  return m >= 60 ? `${Math.floor(m / 60)}h${String(m % 60).padStart(2, "0")}` : `${m}'`;
+}
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const asDate = iso => new Date(iso + "T12:00:00");
+const fmt = (d, o) => d.toLocaleDateString("en-GB", o);
+
+async function load() {
+  const cfg = await loadSettings();
+  document.getElementById("logo").src = "../" + cfg.logo + "?v=" + Date.now();
+  const res = await fetch("../schedule.csv", { cache: "no-store" });
+  if (!res.ok) throw new Error("schedule.csv not found (" + res.status + ")");
+  const lines = (await res.text()).replace(/\r/g, "").trim().split("\n").slice(1).filter(l => l.trim());
+  const rows = lines.map(l => {
+    const [date, start, end, ...rest] = l.split(",");
+    return { date: date.trim(), start: start.trim(), end: end.trim(), desc: rest.join(",").trim() };
+  }).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  if (!rows.length) throw new Error("schedule.csv is empty");
+
+  // group by day
+  const days = {};
+  rows.forEach(r => (days[r.date] = days[r.date] || []).push(r));
+
+  let html = "";
+  for (const [date, items] of Object.entries(days)) {
+    const d = asDate(date);
+    html += `<div class="day"><div class="dayhead"><span class="dow">${fmt(d, { weekday: "long" })}</span>` +
+            `<span class="dt">${fmt(d, { day: "numeric", month: "long", year: "numeric" })}</span></div><table>`;
+    for (const r of items) {
+      const k = kind(r.desc);
+      let name = r.desc;
+      if (k === "race" && !/race/i.test(name)) name += " – Race";
+      html += `<tr class="${k}"><td class="time">${r.start}<span>–</span>${r.end}</td>` +
+              `<td class="dur">${dur(r.start, r.end)}</td><td class="desc">${esc(name)}</td>` +
+              `<td class="tag"><span>${LABEL[k]}</span></td></tr>`;
+    }
+    html += "</table></div>";
+  }
+  document.getElementById("list").innerHTML = html;
+
+  // header: year + date range taken from the CSV
+  const first = asDate(rows[0].date), last = asDate(rows[rows.length - 1].date);
+  const sameMonth = first.getMonth() === last.getMonth() && first.getFullYear() === last.getFullYear();
+  const range = sameMonth
+    ? `${first.getDate()} – ${fmt(last, { day: "numeric", month: "long", year: "numeric" })}`
+    : `${fmt(first, { day: "numeric", month: "long" })} – ${fmt(last, { day: "numeric", month: "long", year: "numeric" })}`;
+  const year = String(last.getFullYear());
+  document.getElementById("eyebrow").textContent =
+    cfg.title ? (cfg.title.includes(year) ? cfg.title : `${cfg.title} ${year}`) : year;
+  document.getElementById("sub").textContent = cfg.venue ? `${cfg.venue} · ${range}` : range;
+  if (cfg.title) document.title = `${cfg.title} – Timetable`;
+  document.getElementById("stamp").textContent =
+    "Printed " + new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) +
+    " · Subject to change – check official bulletins";
+
+  fitToPage();
+}
+
+// if the CSV gets longer than one A4 page, shrink the list so it still prints on one sheet
+function fitToPage() {
+  const main = document.querySelector("main"), fit = document.getElementById("fit");
+  fit.style.transform = ""; fit.style.width = "";
+  const avail = main.clientHeight - parseFloat(getComputedStyle(main).paddingTop);
+  const need = fit.scrollHeight;
+  if (need > avail) {
+    const s = avail / need;
+    fit.style.transform = `scale(${s})`;
+    fit.style.width = (100 / s) + "%";
+  }
+}
+
+load().catch(e => { document.getElementById("list").innerHTML = `<p class="err">${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>
