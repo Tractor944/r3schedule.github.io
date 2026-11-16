@@ -54,15 +54,32 @@ body {
 .logo{
 max-width:60vw;
 max-height:20vh;
+padding-top:4vh;
 margin-bottom:3vh;
 }
 
 .date{font-size:3vw;opacity:.85;}
 
 .session-name{
-font-size:7vw;
 font-weight:bold;
 margin:2vh;
+}
+
+/* riga 1: NEXT / NOW */
+.session-label{
+font-size:clamp(14px, 3vw, 48px);
+letter-spacing:.15em;
+text-transform:uppercase;
+color:#EE4B2B;
+}
+
+/* riga 2: nome sessione, sempre su una riga.
+   font-size = dimensione MASSIMA; fitTitle() la riduce se il nome è troppo lungo */
+.session-title{
+display:inline-block;
+white-space:nowrap;
+font-size:7vw;
+line-height:1.1;
 }
 
 .countdown{
@@ -394,6 +411,11 @@ display:block;
 width:100%;
 }
 
+/* ===== TITOLO SESSIONE MOBILE ===== */
+.session-title{
+font-size:11vw;
+}
+
 /* ===== UPCOMING LIST MOBILE ===== */
 .upcoming-list{
 gap:.4vh;
@@ -478,7 +500,10 @@ display:none;
 <div class="container">
 <img src="logo.png" class="logo">
 <div id="date" class="date"></div>
-<div id="title" class="session-name"></div>
+<div class="session-name">
+<div id="titleLabel" class="session-label"></div>
+<div id="titleName" class="session-title"></div>
+</div>
 <div id="timer" class="countdown"></div>
 <div class="next-session">
 <div id="upcomingList" class="upcoming-list"></div>
@@ -556,7 +581,8 @@ end: date.trim()+"T"+end.trim()+":00"
 }
 
 /************* ELEMENTS *************/
-const titleEl=title;
+const titleLabelEl=titleLabel;
+const titleNameEl=titleName;
 const timerEl=timer;
 const dateEl=date;
 const upcomingEl=upcomingList;
@@ -738,6 +764,33 @@ return `
 }).join("");
 }
 
+/************* TITLE (NEXT / NOW + nome su una riga) *************/
+
+let titleKey = "";
+
+/* riduce il font del nome finché sta in una riga nella larghezza dello schermo */
+function fitTitle(){
+titleNameEl.style.fontSize = "";                         /* torna alla dimensione massima del CSS */
+const max = parseFloat(getComputedStyle(titleNameEl).fontSize);
+const avail = document.documentElement.clientWidth * 0.92;
+const w = titleNameEl.scrollWidth;
+if(w > avail){
+titleNameEl.style.fontSize = Math.floor(max * avail / w) + "px";
+}
+}
+
+function setTitle(label, name){
+const key = label + "|" + name;
+if(key === titleKey) return;   /* aggiorna il DOM solo quando cambia */
+titleKey = key;
+titleLabelEl.textContent = label;
+titleNameEl.textContent = name;
+fitTitle();
+}
+
+window.addEventListener("resize", fitTitle);
+if(document.fonts) document.fonts.ready.then(fitTitle);
+
 /************* FULLSCREEN *************/
 function enterFullscreen(){
 document.documentElement.requestFullscreen().catch(()=>{});
@@ -765,7 +818,7 @@ const end=new Date(s.end);
 
 /* sessione non ancora iniziata */
 if(n<start){
-titleEl.textContent="Start of "+s.name;
+setTitle("Next", s.name);
 timerEl.textContent=formatTime(start-n);
 
 /* la prima della lista è quella del countdown */
@@ -775,7 +828,7 @@ break;
 
 /* sessione in corso */
 if(n>=start&&n<end){
-titleEl.textContent="Now: "+s.name+(s.extra ? " ("+s.extra+")" : "");
+setTitle("Now", s.name+(s.extra ? " ("+s.extra+")" : ""));
 timerEl.textContent=formatTime(end-n);
 
 /* quella in corso è già nel titolo: parto dalla successiva */
