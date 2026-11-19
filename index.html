@@ -58,7 +58,6 @@ padding-top:4vh;
 margin-bottom:3vh;
 }
 
-.date{font-size:3vw;opacity:.85;}
 
 .session-name{
 font-weight:bold;
@@ -499,7 +498,6 @@ display:none;
 <!-- MAIN -->
 <div class="container">
 <img src="logo.png" class="logo">
-<div id="date" class="date"></div>
 <div class="session-name">
 <div id="titleLabel" class="session-label"></div>
 <div id="titleName" class="session-title"></div>
@@ -584,7 +582,6 @@ end: date.trim()+"T"+end.trim()+":00"
 const titleLabelEl=titleLabel;
 const titleNameEl=titleName;
 const timerEl=timer;
-const dateEl=date;
 const upcomingEl=upcomingList;
 const clockTime=currentTime;
 const clockDate=currentDate;
@@ -807,7 +804,6 @@ const n=now();
 
 clockTime.textContent=formatClock(n);
 clockDate.textContent=formatDate(n);
-dateEl.textContent=formatDate(n);
 
 let upcoming=[];
 let labels=UPCOMING_LABELS;
