@@ -726,10 +726,11 @@ table.innerHTML+=`
 /* cache: evita di riscrivere il DOM 4 volte al secondo */
 let upcomingKey = "";
 
-function renderUpcoming(list, n){
+function renderUpcoming(list, n, labels){
 
 /* chiave di stato: cambia solo quando serve ridisegnare */
 const key = list.map(s => s.start + "|" + s.name).join("//")
+          + "#" + labels.join(",")
           + "#" + (timeFormat24 ? "24" : "12")
           + "#" + n.toDateString();
 
@@ -756,7 +757,7 @@ st.toDateString() === n.toDateString()
 
 return `
 <div class="upcoming-item ${i===0 ? "first" : ""}">
-<span class="upcoming-label">${UPCOMING_LABELS[i] || "Then:"}</span>
+<span class="upcoming-label">${labels[i] || "Then:"}</span>
 <span class="upcoming-name">${s.name}</span>
 <span class="upcoming-time">${dayPrefix}${formatClock(st)}</span>
 </div>`;
@@ -809,6 +810,7 @@ clockDate.textContent=formatDate(n);
 dateEl.textContent=formatDate(n);
 
 let upcoming=[];
+let labels=UPCOMING_LABELS;
 
 for(let i=0;i<schedule.length;i++){
 
@@ -821,8 +823,10 @@ if(n<start){
 setTitle("Next", s.name);
 timerEl.textContent=formatTime(start-n);
 
-/* la prima della lista è quella del countdown */
-upcoming=schedule.slice(i, i+UPCOMING_COUNT);
+/* quella del countdown è già nel titolo (NEXT): parto dalla successiva,
+   etichettata "Then:" per non ripetere "Next" */
+upcoming=schedule.slice(i+1, i+1+UPCOMING_COUNT);
+labels=["Then:","Then:","Then:"];
 break;
 }
 
@@ -837,7 +841,7 @@ break;
 }
 }
 
-renderUpcoming(upcoming, n);
+renderUpcoming(upcoming, n, labels);
 
 // if(scheduleVisible) buildSchedule();
 }
